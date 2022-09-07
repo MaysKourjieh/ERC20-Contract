@@ -54,6 +54,8 @@ contract ERC20 {
         _name = name_;
         _symbol = symbol_;
         _decimals = decimals_;
+        _totalSupply = 0;
+        _balances[msg.sender] += _totalSupply;
     }
 
     // Contract metadata
@@ -62,35 +64,35 @@ contract ERC20 {
      * @dev Returns the name of the token.
      */
     function name() public view returns (string memory) {
-        //
+        return _name;
     }
 
     /**
      * @dev Returns the symbol of the token.
      */
     function symbol() public view returns (string memory) {
-        //
+        return _symbol;
     }
 
     /**
      * @dev Returns the number of decimals for the token.
      */
     function decimals() public view returns (uint8) {
-        //
+        return _decimals;
     }
 
     /**
      * @dev Returns the amount of tokens in existence.
      */
     function totalSupply() external view returns (uint256) {
-        //
+        return _totalSupply;
     }
 
     /**
      * @dev Returns the amount of tokens owned by `account`.
      */
     function balanceOf(address account) external view returns (uint256) {
-        //
+        return _balances[account];
     }
 
     // Public transfer functions
@@ -103,7 +105,7 @@ contract ERC20 {
      * Returns a boolean value indicating whether the operation succeeded.
      */
     function transfer(address to, uint256 amount) external returns (bool) {
-        //
+        return _transfer(msg.sender, to, amount);
     }
 
     /**
@@ -118,7 +120,7 @@ contract ERC20 {
         view
         returns (uint256)
     {
-        //
+        return _allowances[spender][owner];
     }
 
     /**
@@ -135,7 +137,7 @@ contract ERC20 {
      * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
      */
     function approve(address spender, uint256 amount) external returns (bool) {
-        //
+        return _approve(msg.sender, spender, amount);
     }
 
     /**
@@ -145,14 +147,20 @@ contract ERC20 {
      * internal function _transfer.
      *
      * Returns a boolean value indicating whether the operation succeeded.
-     *
+     *from
      */
     function transferFrom(
         address from,
         address to,
         uint256 amount
     ) external returns (bool) {
-        //
+        require(
+            _allowances[msg.sender][from] >= amount,
+            "Allowance insufficient"
+        );
+        _allowances[msg.sender][from] -= amount;
+        emit Approval(from, msg.sender, amount);
+        return _transfer(from, to, amount);
     }
 
     // Public supply functions
@@ -169,7 +177,7 @@ contract ERC20 {
      * lesson, you will publically allow mints to anyone.
      */
     function mint(uint256 amount) external returns (bool) {
-        //
+        return _mint(msg.sender, amount);
     }
 
     /**
@@ -184,7 +192,7 @@ contract ERC20 {
      * lesson, you will publically allow mints to anyone.
      */
     function mintTo(address to, uint256 amount) external returns (bool) {
-        //
+        return _mint(to, amount);
     }
 
     /**
@@ -195,7 +203,7 @@ contract ERC20 {
      * Return a boolean value indicating whether the operation succeeded.
      */
     function burn(uint256 amount) external returns (bool) {
-        //
+        return _burn(msg.sender, amount);
     }
 
     /**
@@ -206,7 +214,8 @@ contract ERC20 {
      * Return a boolean value indicating whether the operation succeeded.
      */
     function burnFrom(address from, uint256 amount) external returns (bool) {
-        //
+        // require(_allowances[from][msg.sender] >= amount, "Allowance insufficient");
+        return _burn(from, amount);
     }
 
     // Internal functions
@@ -228,8 +237,18 @@ contract ERC20 {
         address from,
         address to,
         uint256 amount
-    ) internal {
-        //
+    ) internal returns (bool) {
+        require(from != address(0), "ERC20: transfer from the zero address");
+        require(to != address(0), "ERC20: transfer to the zero address");
+        require(
+            _balances[from] >= amount,
+            "ERC20: transfer amount exceeds balance"
+        );
+        _approve(from, to, amount);
+        _balances[from] -= amount;
+        _balances[to] += amount;
+        emit Transfer(from, to, amount);
+        return true;
     }
 
     /**
@@ -246,8 +265,13 @@ contract ERC20 {
         address owner,
         address spender,
         uint256 amount
-    ) internal virtual {
-        //
+    ) internal virtual returns (bool) {
+        require(owner != address(0), "ERC20: approve from the zero address");
+        require(spender != address(0), "ERC20: approve to the zero address");
+        _allowances[spender][owner] = 0;
+        _allowances[spender][owner] = amount;
+        emit Approval(owner, spender, amount);
+        return true;
     }
 
     /**
@@ -264,8 +288,14 @@ contract ERC20 {
      * - `account` cannot be the zero address.
      * - `account` must have at least `amount` tokens.
      */
-    function _burn(address to, uint256 amount) internal {
-        //
+    function _burn(address to, uint256 amount) internal returns (bool) {
+        require(to != address(0), "ERC20: burn from the zero address");
+        require(_balances[to] >= amount, "ERC20: burn amount exceeds balance");
+        _balances[to] -= amount;
+        _totalSupply -= amount;
+        emit Transfer(msg.sender, address(0), amount);
+        emit Burn(to, msg.sender, amount);
+        return true;
     }
 
     /**
@@ -281,8 +311,13 @@ contract ERC20 {
      *
      * - `account` cannot be the zero address.
      */
-    function _mint(address to, uint256 amount) internal {
-        //
+    function _mint(address to, uint256 amount) internal returns (bool) {
+        require(to != address(0), "ERC20: mint to the zero address");
+        _totalSupply += amount;
+        _balances[to] += amount;
+        emit Transfer(address(0), to, amount);
+        emit Mint(to, msg.sender, amount);
+        return true;
     }
 
     // Functions for testing, not part of the ERC20 standard, do not change them
