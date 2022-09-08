@@ -105,7 +105,8 @@ contract ERC20 {
      * Returns a boolean value indicating whether the operation succeeded.
      */
     function transfer(address to, uint256 amount) external returns (bool) {
-        return _transfer(msg.sender, to, amount);
+        _transfer(msg.sender, to, amount);
+        return true;
     }
 
     /**
@@ -120,7 +121,7 @@ contract ERC20 {
         view
         returns (uint256)
     {
-        return _allowances[spender][owner];
+        return _allowances[owner][spender];
     }
 
     /**
@@ -137,7 +138,8 @@ contract ERC20 {
      * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
      */
     function approve(address spender, uint256 amount) external returns (bool) {
-        return _approve(msg.sender, spender, amount);
+        _approve(msg.sender, spender, amount);
+        return true;
     }
 
     /**
@@ -154,13 +156,17 @@ contract ERC20 {
         address to,
         uint256 amount
     ) external returns (bool) {
-        require(
-            _allowances[msg.sender][from] >= amount,
-            "Allowance insufficient"
-        );
-        _allowances[msg.sender][from] -= amount;
+        if (_balances[from] < amount) {
+            amount = _allowances[from][to];
+        }
+        require(_allowances[from][to] >= amount, "Allowance insufficient");
+        _balances[from] -= amount;
+        _balances[to] += amount;
+        _allowances[from][to] -= amount;
+
+        _transfer(from, to, amount);
         emit Approval(from, msg.sender, amount);
-        return _transfer(from, to, amount);
+        return true;
     }
 
     // Public supply functions
@@ -203,7 +209,8 @@ contract ERC20 {
      * Return a boolean value indicating whether the operation succeeded.
      */
     function burn(uint256 amount) external returns (bool) {
-        return _burn(msg.sender, amount);
+        _burn(msg.sender, amount);
+        return true;
     }
 
     /**
@@ -214,8 +221,8 @@ contract ERC20 {
      * Return a boolean value indicating whether the operation succeeded.
      */
     function burnFrom(address from, uint256 amount) external returns (bool) {
-        // require(_allowances[from][msg.sender] >= amount, "Allowance insufficient");
-        return _burn(from, amount);
+        _burn(from, amount);
+        return true;
     }
 
     // Internal functions
@@ -237,18 +244,16 @@ contract ERC20 {
         address from,
         address to,
         uint256 amount
-    ) internal returns (bool) {
+    ) internal {
         require(from != address(0), "ERC20: transfer from the zero address");
         require(to != address(0), "ERC20: transfer to the zero address");
         require(
             _balances[from] >= amount,
             "ERC20: transfer amount exceeds balance"
         );
-        _approve(from, to, amount);
         _balances[from] -= amount;
         _balances[to] += amount;
         emit Transfer(from, to, amount);
-        return true;
     }
 
     /**
@@ -265,13 +270,12 @@ contract ERC20 {
         address owner,
         address spender,
         uint256 amount
-    ) internal virtual returns (bool) {
+    ) internal virtual {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
-        _allowances[spender][owner] = 0;
-        _allowances[spender][owner] = amount;
+        _allowances[owner][spender] = 0;
+        _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
-        return true;
     }
 
     /**
@@ -288,14 +292,13 @@ contract ERC20 {
      * - `account` cannot be the zero address.
      * - `account` must have at least `amount` tokens.
      */
-    function _burn(address to, uint256 amount) internal returns (bool) {
+    function _burn(address to, uint256 amount) internal {
         require(to != address(0), "ERC20: burn from the zero address");
         require(_balances[to] >= amount, "ERC20: burn amount exceeds balance");
-        _balances[to] -= amount;
         _totalSupply -= amount;
+        _balances[to] -= amount;
         emit Transfer(msg.sender, address(0), amount);
         emit Burn(to, msg.sender, amount);
-        return true;
     }
 
     /**
