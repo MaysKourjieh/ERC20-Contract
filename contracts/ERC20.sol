@@ -55,7 +55,7 @@ contract ERC20 {
         _symbol = symbol_;
         _decimals = decimals_;
         _totalSupply = 0;
-        _balances[msg.sender] += _totalSupply;
+        unchecked{ _balances[msg.sender] += _totalSupply; }
     }
 
     // Contract metadata
@@ -159,13 +159,9 @@ contract ERC20 {
         if (_balances[from] < amount) {
             amount = _allowances[from][to];
         }
-        require(_allowances[from][to] >= amount, "Allowance insufficient");
-        _balances[from] -= amount;
-        _balances[to] += amount;
-        _allowances[from][to] -= amount;
-
+        unchecked{_allowances[from][to] -= amount;}
         _transfer(from, to, amount);
-        emit Approval(from, msg.sender, amount);
+        
         return true;
     }
 
@@ -251,8 +247,8 @@ contract ERC20 {
             _balances[from] >= amount,
             "ERC20: transfer amount exceeds balance"
         );
-        _balances[from] -= amount;
-        _balances[to] += amount;
+        unchecked{ _balances[from] -= amount; }
+        unchecked{ _balances[to] += amount; }
         emit Transfer(from, to, amount);
     }
 
@@ -295,8 +291,8 @@ contract ERC20 {
     function _burn(address to, uint256 amount) internal {
         require(to != address(0), "ERC20: burn from the zero address");
         require(_balances[to] >= amount, "ERC20: burn amount exceeds balance");
-        _totalSupply -= amount;
-        _balances[to] -= amount;
+        unchecked{ _totalSupply -= amount; }
+        unchecked{ _balances[to] -= amount; }
         emit Transfer(msg.sender, address(0), amount);
         emit Burn(to, msg.sender, amount);
     }
@@ -316,8 +312,8 @@ contract ERC20 {
      */
     function _mint(address to, uint256 amount) internal returns (bool) {
         require(to != address(0), "ERC20: mint to the zero address");
-        _totalSupply += amount;
-        _balances[to] += amount;
+        unchecked{ _totalSupply += amount; }
+        unchecked{ _balances[to] += amount; }
         emit Transfer(address(0), to, amount);
         emit Mint(to, msg.sender, amount);
         return true;
