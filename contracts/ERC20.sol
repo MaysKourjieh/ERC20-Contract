@@ -13,7 +13,7 @@ contract ERC20 {
     string private _symbol;
 
     uint8 private _decimals;
-
+    uint256 MAX_INT = type(uint256).max;
     // Events
 
     /**
@@ -54,8 +54,8 @@ contract ERC20 {
         _name = name_;
         _symbol = symbol_;
         _decimals = decimals_;
-        _totalSupply = 0;
-        unchecked{ _balances[msg.sender] += _totalSupply; }
+        _totalSupply = 10;
+        _balances[msg.sender] = _totalSupply;
     }
 
     // Contract metadata
@@ -156,13 +156,18 @@ contract ERC20 {
         address to,
         uint256 amount
     ) external returns (bool) {
+        uint256 newAmount;
         if (_balances[from] < amount) {
-            amount = _allowances[from][to];
+            amount = _allowances[from][msg.sender];
         }
-        unchecked{_allowances[from][to] -= amount;}
-        _transfer(from, to, amount);
-        
-        return true;
+        if(_allowances[from][msg.sender] < MAX_INT){
+            require (_allowances[from][msg.sender]>=amount,"ERC20: insufficient allowance");
+            newAmount = _allowances[from][msg.sender] - amount;
+            _approve(from,msg.sender,newAmount);
+            _transfer(from, to, newAmount);
+            return true;
+        }
+        return false;
     }
 
     // Public supply functions
