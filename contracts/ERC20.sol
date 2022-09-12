@@ -54,8 +54,10 @@ contract ERC20 {
         _name = name_;
         _symbol = symbol_;
         _decimals = decimals_;
+        _mint(msg.sender, 50);
         _totalSupply = 50;
-        _balances[msg.sender] = _totalSupply;
+        // _balances[msg.sender] = _totalSupply;
+         
     }
 
     // Contract metadata
