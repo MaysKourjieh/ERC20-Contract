@@ -18,7 +18,7 @@ contract('ERC20', function (accounts) {
 
   const decimals = 18;
 
-  const initialSupply = new BN(0);
+  const initialSupply = new BN(50);
 
   beforeEach(async function () {
     this.token = await ERC20Mock.new(name, symbol, decimals);
