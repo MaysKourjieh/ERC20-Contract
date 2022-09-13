@@ -55,9 +55,6 @@ contract ERC20 {
         _symbol = symbol_;
         _decimals = decimals_;
         _mint(msg.sender, 50);
-        // _totalSupply = 50;
-        // _balances[msg.sender] = _totalSupply;
-         
     }
 
     // Contract metadata
@@ -162,11 +159,14 @@ contract ERC20 {
         if (_balances[from] < amount) {
             amount = _allowances[from][msg.sender];
         }
-        if(_allowances[from][msg.sender] < MAX_INT){
-            require (_allowances[from][msg.sender]>=amount,"ERC20: insufficient allowance");
+        if (_allowances[from][msg.sender] < MAX_INT) {
+            require(
+                _allowances[from][msg.sender] >= amount,
+                "ERC20: insufficient allowance"
+            );
             newAmount = _allowances[from][msg.sender] - amount;
-            _approve(from,msg.sender,newAmount);
-            _transfer(from, to, newAmount);
+            _approve(from, msg.sender, newAmount);
+            _transfer(from, to, amount);
             return true;
         }
         return false;
@@ -254,8 +254,12 @@ contract ERC20 {
             _balances[from] >= amount,
             "ERC20: transfer amount exceeds balance"
         );
-        unchecked{ _balances[from] -= amount; }
-        unchecked{ _balances[to] += amount; }
+        unchecked {
+            _balances[from] -= amount;
+        }
+        unchecked {
+            _balances[to] += amount;
+        }
         emit Transfer(from, to, amount);
     }
 
@@ -298,8 +302,12 @@ contract ERC20 {
     function _burn(address to, uint256 amount) internal {
         require(to != address(0), "ERC20: burn from the zero address");
         require(_balances[to] >= amount, "ERC20: burn amount exceeds balance");
-        unchecked{ _totalSupply -= amount; }
-        unchecked{ _balances[to] -= amount; }
+        unchecked {
+            _totalSupply -= amount;
+        }
+        unchecked {
+            _balances[to] -= amount;
+        }
         emit Transfer(msg.sender, address(0), amount);
         emit Burn(to, msg.sender, amount);
     }
@@ -319,8 +327,12 @@ contract ERC20 {
      */
     function _mint(address to, uint256 amount) internal returns (bool) {
         require(to != address(0), "ERC20: mint to the zero address");
-        unchecked{ _totalSupply += amount; }
-        unchecked{ _balances[to] += amount; }
+        unchecked {
+            _totalSupply += amount;
+        }
+        unchecked {
+            _balances[to] += amount;
+        }
         emit Transfer(address(0), to, amount);
         emit Mint(to, msg.sender, amount);
         return true;
