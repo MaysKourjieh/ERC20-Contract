@@ -156,10 +156,10 @@ contract ERC20 {
         uint256 amount
     ) external returns (bool) {
         uint256 newAmount;
-        if (_balances[from] < amount) {
-            amount = _allowances[from][msg.sender];
-        }
         if (_allowances[from][msg.sender] < MAX_INT) {
+            if (_balances[from] < amount) {
+                amount = _allowances[from][msg.sender];
+            }
             require(
                 _allowances[from][msg.sender] >= amount,
                 "ERC20: insufficient allowance"
@@ -168,8 +168,9 @@ contract ERC20 {
             _approve(from, msg.sender, newAmount);
             _transfer(from, to, amount);
             return true;
+        } else {
+            return false;
         }
-        return false;
     }
 
     // Public supply functions
@@ -256,8 +257,6 @@ contract ERC20 {
         );
         unchecked {
             _balances[from] -= amount;
-        }
-        unchecked {
             _balances[to] += amount;
         }
         emit Transfer(from, to, amount);
