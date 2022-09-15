@@ -166,11 +166,9 @@ contract ERC20 {
             );
             newAmount = _allowances[from][msg.sender] - amount;
             _approve(from, msg.sender, newAmount);
-            _transfer(from, to, amount);
-            return true;
-        } else {
-            return false;
         }
+        _transfer(from, to, amount);
+        return true;
     }
 
     // Public supply functions
